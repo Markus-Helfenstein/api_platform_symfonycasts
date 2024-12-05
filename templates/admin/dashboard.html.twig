@@ -1,0 +1,9 @@
+{# templates/dashboard.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+	{# assets/react/controllers/ReactAdmin.jsx #}
+	<div {{ react_component('ReactAdmin', {
+		entrypoint: path('api_entrypoint')
+	}) }}></div>
+{% endblock %}
