@@ -8,7 +8,7 @@ security:
         app_user_provider:
             entity:
                 class: App\Entity\User
-                property: email
+                property: email # tells the security system to find users in the database by their email
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -16,6 +16,10 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            json_login:
+                check_path: app_login # route name over login method in SecurityController
+                username_path: email # path in received json to retrieve the username from
+                password_path: password # path in received json to retrieve the password from
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
