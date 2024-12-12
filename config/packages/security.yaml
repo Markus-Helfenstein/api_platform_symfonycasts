@@ -20,6 +20,8 @@ security:
                 check_path: app_login # route name over login method in SecurityController
                 username_path: email # path in received json to retrieve the username from
                 password_path: password # path in received json to retrieve the password from
+            logout:
+                path: app_logout
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall
