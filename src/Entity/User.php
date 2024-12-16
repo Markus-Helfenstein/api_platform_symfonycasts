@@ -4,8 +4,13 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use ApiPlatform\Serializer\Filter\PropertyFilter;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -19,8 +24,17 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ApiResource(
+    operations: [
+        new Get(),
+        new GetCollection(),
+        new Post(security: 'is_granted("PUBLIC_ACCESS")'),
+        new Put(security: 'is_granted("ROLE_USER_EDIT")'),
+        new Patch(security: 'is_granted("ROLE_USER_EDIT")'),
+        new Delete(),
+    ],
     normalizationContext: ['groups' => ['user:read']],
     denormalizationContext: ['groups' => ['user:write']],
+    security: 'is_granted("ROLE_USER")',
 )]
 #[ApiResource(
     uriTemplate: '/treasures/{treasure_id}/owner.{_format}',
@@ -32,6 +46,7 @@ use Symfony\Component\Validator\Constraints as Assert;
         ),
     ],
     normalizationContext: ['groups' => ['user:read']],
+    security: 'is_granted("ROLE_USER")',
 )]
 #[ApiFilter(PropertyFilter::class)]
 #[UniqueEntity(fields: ['email'], message: 'There is already an account with this email')]
@@ -72,6 +87,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'ownedBy', targetEntity: ApiToken::class)]
     private Collection $apiTokens;
 
+    /**
+     * NOT a persisted column
+     * Scopes given during API authentication
+     */
+    private ?array $accessTokenScopes = null;
+
     public function __construct()
     {
         $this->dragonTreasures = new ArrayCollection();
@@ -107,10 +128,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * @see UserInterface
+     * Will be called on authentication
      */
     public function getRoles(): array
     {
-        $roles = $this->roles;
+        if (null === $this->accessTokenScopes) {
+            // logged in as a full, normal user
+            $roles = $this->roles;
+            $roles[] = 'ROLE_FULL_USER';
+        } else {
+            $roles = $this->accessTokenScopes;
+        }
+
         // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
 
@@ -230,5 +259,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             ->map(fn(ApiToken $token) => $token->getToken())
             ->toArray()
         ;
+    }
+
+    public function markAsTokenAuthenticated(array $scopes): void
+    {
+        $this->accessTokenScopes = $scopes;
     }
 }
