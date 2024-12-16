@@ -1,4 +1,7 @@
 api_platform:
+    defaults:
+        extra_properties:
+            standard_put: true
     formats:
         jsonld: [ 'application/ld+json' ]
         json: [ 'application/json' ]

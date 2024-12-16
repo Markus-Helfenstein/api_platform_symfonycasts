@@ -36,8 +36,8 @@ use function Symfony\Component\String\u;
         ),
         new GetCollection(),
         new Post(security: 'is_granted("ROLE_TREASURE_CREATE")'),
-        new Put(security: 'is_granted("ROLE_TREASURE_EDIT")'),
-        new Patch(security: 'is_granted("ROLE_TREASURE_EDIT")'),
+        //new Put(security: 'is_granted("ROLE_TREASURE_EDIT")'),
+        new Patch(security: 'is_granted("ROLE_TREASURE_EDIT") and object.getOwner() == user'), // object resp. user are passed in by symfony. see docs for expression syntax. it's not exactly like twig, i.e. it can't access private fields
         new Delete(security: 'is_granted("ROLE_ADMIN")'),
     ],
     formats: [
