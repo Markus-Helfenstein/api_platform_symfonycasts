@@ -6,7 +6,6 @@ use App\Entity\ApiToken;
 use App\Factory\ApiTokenFactory;
 use App\Factory\DragonTreasureFactory;
 use App\Factory\UserFactory;
-use DateTime;
 use Zenstruck\Browser\Json;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
@@ -144,13 +143,13 @@ class DragonTreasureResourceTest extends BaseApiTestCase
 
     public function testPatchToUpdateTreasureAsOwner(): void
     {
-        $user = UserFactory::createOne();
+        $owner = UserFactory::createOne();
         $treasure = DragonTreasureFactory::createOne([
-            'owner' => $user
+            'owner' => $owner
         ]);
 
         $this->browser()
-            ->actingAs($user)
+            ->actingAs($owner)
             ->patch('/api/treasures/' . $treasure->getId(), [
                 'json' => [
                     'value' => 12345
@@ -161,9 +160,8 @@ class DragonTreasureResourceTest extends BaseApiTestCase
         ;
     }
 
-    public function testPatchToUpdateTreasureForbiddenForOthers() : void
+    public function testPatchToUpdateTreasureForbiddenForOthers(): void
     {
-
         $otherUser = UserFactory::createOne();
         $treasure = DragonTreasureFactory::createOne();
 
@@ -175,6 +173,42 @@ class DragonTreasureResourceTest extends BaseApiTestCase
                 ],
             ])
             ->assertStatus(403)
+        ;
+    }
+
+    public function testPatchToUpdateTreasureOwnershipImmutable(): void
+    {
+        $otherUser = UserFactory::createOne();
+        $owner = UserFactory::createOne();
+        $treasure = DragonTreasureFactory::createOne([
+            'owner' => $owner
+        ]);
+
+        $this->browser()
+            ->actingAs($owner)
+            ->patch('/api/treasures/' . $treasure->getId(), [
+                'json' => [
+                    'owner' => '/api/users/' . $otherUser->getId()
+                ],
+            ])
+            ->assertStatus(403)
+        ;
+    }
+
+    public function testAdminCanPatchToEditTreasure(): void
+    {
+        $admin = UserFactory::new()->withAdminRole()->create();
+        $someonesTreasure = DragonTreasureFactory::createOne();
+
+        $this->browser()
+            ->actingAs($admin)
+            ->patch('/api/treasures/' . $someonesTreasure->getId(), [
+                'json' => [
+                    'value' => 12345
+                ],
+            ])
+            ->assertStatus(200)
+            ->assertJsonMatches('value', 12345)
         ;
     }
 }

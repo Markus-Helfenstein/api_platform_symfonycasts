@@ -36,8 +36,15 @@ use function Symfony\Component\String\u;
         ),
         new GetCollection(),
         new Post(security: 'is_granted("ROLE_TREASURE_CREATE")'),
+        new Patch(
+            // object resp. user are passed in by symfony in their state from the database before any changes are applied. 
+            // see docs for expression syntax. it's not exactly like twig, i.e. it can't access private fields
+            security: 'is_granted("ROLE_ADMIN") or (is_granted("ROLE_TREASURE_EDIT") and object.getOwner() == user)',
+            // this may be used to check if the changes are against the rules (perhaps business rule validation is a better place for this)
+            // previous_object would be a way to access the original state here
+            securityPostDenormalize: 'is_granted("ROLE_ADMIN") or object.getOwner() == user' 
+        ), 
         //new Put(security: 'is_granted("ROLE_TREASURE_EDIT")'),
-        new Patch(security: 'is_granted("ROLE_TREASURE_EDIT") and object.getOwner() == user'), // object resp. user are passed in by symfony. see docs for expression syntax. it's not exactly like twig, i.e. it can't access private fields
         new Delete(security: 'is_granted("ROLE_ADMIN")'),
     ],
     formats: [
