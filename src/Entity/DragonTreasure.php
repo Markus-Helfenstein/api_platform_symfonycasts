@@ -6,6 +6,7 @@ use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\RangeFilter;
 use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
@@ -13,7 +14,6 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
 use ApiPlatform\Serializer\Filter\PropertyFilter;
 use App\Repository\DragonTreasureRepository;
 use Carbon\Carbon;
@@ -39,10 +39,10 @@ use function Symfony\Component\String\u;
         new Patch(
             // object resp. user are passed in by symfony in their state from the database before any changes are applied. 
             // see docs for expression syntax. it's not exactly like twig, i.e. it can't access private fields
-            security: 'is_granted("ROLE_ADMIN") or (is_granted("ROLE_TREASURE_EDIT") and object.getOwner() == user)',
+            security: 'is_granted("EDIT", object)',
             // this may be used to check if the changes are against the rules (perhaps business rule validation is a better place for this)
             // previous_object would be a way to access the original state here
-            securityPostDenormalize: 'is_granted("ROLE_ADMIN") or object.getOwner() == user' 
+            securityPostDenormalize: 'is_granted("EDIT", object)' 
         ), 
         //new Put(security: 'is_granted("ROLE_TREASURE_EDIT")'),
         new Delete(security: 'is_granted("ROLE_ADMIN")'),
@@ -120,6 +120,9 @@ class DragonTreasure
 
     #[ORM\Column]
     #[ApiFilter(BooleanFilter::class)]
+    #[Groups(['treasure:read', 'treasure:write'])]
+    // securityPostDenormalize is also supported, but not for requests like GET where no data is denormalized
+    #[ApiProperty(security: 'is_granted("EDIT", object)')]
     private bool $isPublished = false;
 
     #[ORM\ManyToOne(inversedBy: 'dragonTreasures')]
